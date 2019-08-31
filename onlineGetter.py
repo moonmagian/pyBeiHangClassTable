@@ -2,18 +2,18 @@ from selenium import webdriver
 import os
 import shutil
 import re
-import xlrd
 from config import *
 from getpass import getpass
 
 
 def GetClassTable():
+    # TODO: Replace the getter from selenium to requests_html, selenium is too huge!
     username = ''
     password = ''
     default = True
-    if('default' in CONFIG.keys()):
+    if ('default' in CONFIG.keys()):
         default = bool(CONFIG['default'])
-    if(not 'userName' in CONFIG.keys() or not 'passWord' in CONFIG.keys()):
+    if (not 'userName' in CONFIG.keys() or not 'passWord' in CONFIG.keys()):
         print("Can't find 'userName' and 'passWord' in config!")
         username = input("Username:")
         password = getpass()
@@ -21,32 +21,32 @@ def GetClassTable():
         username = CONFIG['userName']
         password = CONFIG['passWord']
     options = webdriver.ChromeOptions()
-    if('.downloadTable' in os.listdir()):
+    if ('.downloadTable' in os.listdir()):
         shutil.rmtree(".downloadTable")
-    subPath = os.path.join(
-        os.getcwd(), '.downloadTable')
+    subPath = os.path.join(os.getcwd(), '.downloadTable')
     prefs = {'download.default_directory': subPath}
     options.add_experimental_option('prefs', prefs)
     driver = webdriver.Chrome(chrome_options=options)
     print("pyBeiHangCalGenerator-OnlineGetter")
     print("Logging in...")
     driver.get(
-        'https://sso.buaa.edu.cn/login?service=http%3A%2F%2F10.200.21.61%3A7001%2Fieas2.1%2Fwelcome')
+        'https://sso.buaa.edu.cn/login?service=http%3A%2F%2F10.200.21.61%3A7001%2Fieas2.1%2Fwelcome'
+    )
     driver.find_element_by_name("username").send_keys(username)
     driver.find_element_by_name("password").send_keys(password)
     driver.find_element_by_name("submit").click()
-    if(str(driver.current_url).find("://10.200.21.61") == -1):
+    if (str(driver.current_url).find("://10.200.21.61") == -1):
         print("Login Failed!")
         return False
     print("Trying to get class table...")
     driver.get("http://10.200.21.61:7001/ieas2.1/kbcx/queryGrkb")
-    if(not default):
+    if (not default):
         select = driver.find_element_by_name("xnxq")
         selections = select.find_elements_by_css_selector("option")
         for k, option in enumerate(selections):
             print(str(k) + ": " + option.text)
-        s = input("Select a classTable file" +
-                  " (0 - " + str(len(selections) - 1) + "): ")
+        s = input("Select a classTable file" + " (0 - " +
+                  str(len(selections) - 1) + "): ")
         selections[int(s)].click()
     driver.execute_script("exportExcel();")
     files = []

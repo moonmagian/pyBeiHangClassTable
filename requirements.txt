@@ -1,3 +1,2 @@
-xlrd
 selenium
 ics
