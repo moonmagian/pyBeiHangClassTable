@@ -2,8 +2,6 @@
 from datetime import time, datetime, timedelta
 from ics import Event, Calendar
 import re
-import sys
-import uuid
 import xlrd
 import pytz
 import config
