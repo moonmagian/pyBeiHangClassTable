@@ -15,6 +15,22 @@ _CLASSTIME = [
     (time(19, 0), time(20, 35)),
     (time(20, 40), time(22, 15)),
 ]
+_CLASSTIME_SINGLE = [
+    (time(8, 0), time(8, 45)),
+    (time(8, 50), time(9, 35)),
+    (time(9, 50), time(10, 35)),
+    (time(10, 40), time(11, 25)),
+    (time(11, 30), time(12, 15)),
+    (time(14, 0), time(14, 45)),
+    (time(14, 50), time(15, 35)),
+    (time(15, 50), time(16, 35)),
+    (time(16, 40), time(17, 25)),
+    (time(17, 30), time(18, 15)),
+    (time(19, 0), time(19, 45)),
+    (time(19, 50), time(20, 35)),
+    (time(20, 40), time(21, 25)),
+    (time(21, 30), time(22, 15)),
+]
 BEGIN_DATE = datetime(2019, 2, 25)
 if ('beginDate' in config.CONFIG.keys()):
     BEGIN_DATE = datetime.strptime(config.CONFIG['beginDate'], "%Y-%m-%d")
@@ -32,25 +48,37 @@ def CombineDateAndTime(date, t):
 
 def CreateClassEvents(classn, dayn, classStr):
     events = []
-    name = re.findall(".*?(?=</br>)", classStr)
+    className = ''
     # print(name[0])
     if config.CONFIG['regexMode'] == 1:
         timeMatches = re.finditer(
             r'(?P<teachername>[\u4e00-\u9fa5 \t0-9()（）]*?)\[(?P<begindate>\d*)-?(?P<enddate>\d*)\] ?周(</br>)?(?P<location>.*?)(?=$|,|，|</br>|<br/>)',
             classStr)
+        className = re.findall(".*?(?=</br>)", classStr)
     elif config.CONFIG['regexMode'] == 2:
         timeMatches = re.finditer(
-            r'(?P<classname>[\u4e00-\u9fa5 \t0-9()（）]*?)</br>(?P<teachername>[\u4e00-\u9fa5 \t0-9]*?)\[(?P<begindate>\d*)-?(?P<enddate>\d*)\] ?周(</br>)?(?P<location>.*)\n',
+            r'(?P<teachername>[\u4e00-\u9fa5 \t0-9]*?)\[(?P<begindate>\d*)-?(?P<enddate>\d*)\] ?周(</br>)?(?P<location>.*)\n第(?P<classtime>[1-9,，]*)节',
             classStr)
+        className = list(
+            re.finditer(
+                r'(?P<classname>[\u4e00-\u9fa5 \t0-9()（）a-zA-Z]*?)</br>(?P<teachername>[\u4e00-\u9fa5 \t0-9]*?)\[(?P<begindate>\d*)-?(?P<enddate>\d*)\] ?周(</br>)?(?P<location>.*)\n',
+                classStr))[0].groupdict()['classname']
     else:
         timeMatches = re.finditer(config.CONFIG['customRegex'], classStr)
     teacherName = ''
+    print(className)
     for timeMatch in timeMatches:
         timeMatch = timeMatch.groupdict()
-        print(name[0])
         print(timeMatch)
-        print('--------')
         rg = None
+        class_begin_time = _CLASSTIME[classn][0]
+        class_end_time = _CLASSTIME[classn][1]
+        if 'classtime' in timeMatch.keys():
+            (earliest,
+             latest) = (int(timeMatch['classtime'].split('，')[0]) - 1,
+                        int(timeMatch['classtime'].split('，')[-1]) - 1)
+            class_begin_time = _CLASSTIME_SINGLE[earliest][0]
+            class_end_time = _CLASSTIME_SINGLE[latest][1]
         if (timeMatch['teachername'] != ''):
             teacherName = timeMatch['teachername']
         if (timeMatch['enddate'] == ''):
@@ -61,14 +89,15 @@ def CreateClassEvents(classn, dayn, classStr):
                        int(timeMatch['enddate']) + 1)
         for i in rg:
             event = Event()
-            event.name = name[0] if name[0] else timeMatch['classname']
+            event.name = className
             event.begin = CombineDateAndTime(GetWeekDate(BEGIN_DATE, i, dayn),
-                                             _CLASSTIME[classn][0])
+                                             class_begin_time)
             event.end = CombineDateAndTime(GetWeekDate(BEGIN_DATE, i, dayn),
-                                           _CLASSTIME[classn][1])
+                                           class_end_time)
             event.location = timeMatch['location']
             event.description = "讲师：" + teacherName
             events.append(event)
+    print('--------')
     return events
 
 
